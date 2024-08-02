@@ -18,6 +18,17 @@ from tqdm import tqdm
 from einops import rearrange
 
 
+def resize_image(image_path, output_path):
+    with Image.open(image_path) as img:
+        # Calculate new dimensions
+        width, height = img.size
+        new_width = (width // 16) * 16
+        new_height = (height // 16) * 16
+
+        # Resize image
+        resized_img = img.resize((new_width, new_height), Image.ANTIALIAS)
+        resized_img.save(output_path)
+
 def save_videos_grid(videos: torch.Tensor, path: str, rescale=False, n_rows=6, fps=25):
     videos = rearrange(videos, "b c t h w -> t b c h w")
     outputs = []
@@ -27,9 +38,15 @@ def save_videos_grid(videos: torch.Tensor, path: str, rescale=False, n_rows=6, f
         if rescale:
             x = (x + 1.0) / 2.0  # -1,1 -> 0,1
         x = (x * 255).numpy().astype(np.uint8)
+        x_pil = Image.fromarray(x)
+        width, height = x_pil.size
+        new_width = (width // 16) * 16
+        new_height = (height // 16) * 16
+        x = np.array(x_pil.resize((new_width, new_height), Image.ANTIALIAS))
         outputs.append(x)
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    print(path)
     imageio.mimsave(path, outputs, fps=fps)
 
 def save_images_grid(images: torch.Tensor, path: str):
